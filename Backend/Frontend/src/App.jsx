@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 // Navbar component
 const Navbar = () => {
@@ -93,9 +93,11 @@ const TodoList = () => {
   const [newTask, setNewTask] = useState('');
   const [newTime, setNewTime] = useState('');
   const [category, setCategory] = useState('professional');
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [dragOverTask, setDragOverTask] = useState(null);
   
   // Save to localStorage whenever tasks change
-  React.useEffect(() => {
+  useEffect(() => {
     localStorage.setItem('workeaseTasks', JSON.stringify(tasks));
   }, [tasks]);
   
@@ -126,19 +128,83 @@ const TodoList = () => {
     setTasks(tasks.filter(task => task.id !== id));
   };
 
+  // Handle drag start
+  const handleDragStart = (e, taskId) => {
+    setDraggedTask(taskId);
+    // Add dragging class for style
+    e.currentTarget.classList.add('dragging');
+  };
+  
+  // Handle drag end
+  const handleDragEnd = (e) => {
+    setDraggedTask(null);
+    setDragOverTask(null);
+    // Remove dragging class
+    e.currentTarget.classList.remove('dragging');
+  };
+  
+  // Handle drag over another task
+  const handleDragOver = (e, taskId) => {
+    e.preventDefault(); // Necessary to allow drop
+    if (draggedTask !== taskId) {
+      setDragOverTask(taskId);
+    }
+  };
+  
+  // Handle drop - reorder tasks
+  const handleDrop = (e, targetId, category) => {
+    e.preventDefault();
+    
+    if (!draggedTask || draggedTask === targetId) return;
+    
+    const tasksCopy = [...tasks];
+    const draggedTaskObj = tasksCopy.find(task => task.id === draggedTask);
+    const targetTaskObj = tasksCopy.find(task => task.id === targetId);
+    
+    // Only allow reordering within the same category
+    if (draggedTaskObj.category !== targetTaskObj.category) return;
+    
+    // Find indices
+    const draggedIndex = tasksCopy.findIndex(task => task.id === draggedTask);
+    const targetIndex = tasksCopy.findIndex(task => task.id === targetId);
+    
+    // Remove dragged task from array
+    tasksCopy.splice(draggedIndex, 1);
+    
+    // Insert at new position
+    tasksCopy.splice(targetIndex, 0, draggedTaskObj);
+    
+    setTasks(tasksCopy);
+    setDraggedTask(null);
+    setDragOverTask(null);
+  };
+
   // Filter tasks by category
   const personalTasks = tasks.filter(task => task.category === 'personal');
   const professionalTasks = tasks.filter(task => task.category === 'professional');
   
   // TaskList component to render tasks for a specific category
-  const TaskList = ({ categoryTasks }) => (
+  const TaskList = ({ categoryTasks, category }) => (
     <div className="tasks-container">
       {categoryTasks.length === 0 ? (
         <div className="no-tasks">No tasks in this category</div>
       ) : (
         categoryTasks.map(task => (
-          <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
+          <div 
+            key={task.id} 
+            className={`task-item ${task.completed ? 'completed' : ''} ${dragOverTask === task.id ? 'drag-over' : ''}`}
+            draggable={true}
+            onDragStart={(e) => handleDragStart(e, task.id)}
+            onDragEnd={handleDragEnd}
+            onDragOver={(e) => handleDragOver(e, task.id)}
+            onDrop={(e) => handleDrop(e, task.id, category)}
+          >
             <div className="task-content">
+              <div className="drag-handle" title="Drag to reorder">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
               <input 
                 type="checkbox"
                 checked={task.completed}
@@ -155,6 +221,7 @@ const TodoList = () => {
                 onClick={() => deleteTask(task.id)}
                 className="delete-btn"
                 aria-label="Delete task"
+                title="Delete task"
               >
                 ×
               </button>
@@ -186,7 +253,7 @@ const TodoList = () => {
           onChange={(e) => setCategory(e.target.value)}
           className="category-select"
         >
-          <option value="professional">Work</option>
+          <option value="professional">Professional</option>
           <option value="personal">Personal</option>
         </select>
         <button type="submit" className="add-btn">Add</button>
@@ -194,12 +261,12 @@ const TodoList = () => {
 
       <div className="task-categories">
         <div className="category-column">
-          <h3 className="category-title">Work Tasks</h3>
-          <TaskList categoryTasks={professionalTasks} />
+          <h3 className="category-title">Professional Tasks</h3>
+          <TaskList categoryTasks={professionalTasks} category="professional" />
         </div>
         <div className="category-column">
           <h3 className="category-title">Personal Tasks</h3>
-          <TaskList categoryTasks={personalTasks} />
+          <TaskList categoryTasks={personalTasks} category="personal" />
         </div>
       </div>
     </div>
@@ -225,7 +292,7 @@ const App = () => {
       <ParticleBackground />
       
       <div className="dashboard-content">
-        <h1 className="dashboard-title" ref={titleRef}>
+        <h1 className="dashboard-title text-center" ref={titleRef}>
           WorkEase Dashboard
         </h1>
         
