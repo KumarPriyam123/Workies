@@ -1,0 +1,31 @@
+{
+  "name": "memory-lane-",
+  "version": "1.0.0",
+  "description": "Memory Lane is a web app designed to help users create and preserve digital time capsules filled with memories—letters, photos, videos, music, and more.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KPriYam-123/Memory-Lane-.git"
+  },
+  "author": "Priyam , Sajal",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KPriYam-123/Memory-Lane-/issues"
+  },
+  "homepage": "https://github.com/KPriYam-123/Memory-Lane-#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.9",
+    "prettier": "^3.5.3"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.12.1"
+  }
+}
