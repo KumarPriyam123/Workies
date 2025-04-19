@@ -63,9 +63,9 @@ const ParticleBackground = () => {
 };
 
 // Dashboard card component
-const DashboardCard = ({ title, icon, children }) => {
+const DashboardCard = ({ title, icon, children, className }) => {
   return (
-    <div className="dashboard-card">
+    <div className={`dashboard-card ${className || ''}`}>
       <div className="card-header">
         <span className="card-icon">{icon}</span>
         <h2>{title}</h2>
@@ -77,28 +77,141 @@ const DashboardCard = ({ title, icon, children }) => {
   );
 };
 
-// Task item component
+// ToDo list component
+const TodoList = () => {
+  const [tasks, setTasks] = useState(() => {
+    const savedTasks = localStorage.getItem('workeaseTasks');
+    return savedTasks ? JSON.parse(savedTasks) : [
+      { id: 1, name: "Complete project proposal", time: "14:00", category: "professional", completed: false },
+      { id: 2, name: "Team meeting", time: "15:30", category: "professional", completed: false },
+      { id: 3, name: "Review code changes", time: "17:00", category: "professional", completed: false },
+      { id: 4, name: "Go for a run", time: "18:30", category: "personal", completed: false },
+      { id: 5, name: "Call mom", time: "20:00", category: "personal", completed: false }
+    ];
+  });
+  
+  const [newTask, setNewTask] = useState('');
+  const [newTime, setNewTime] = useState('');
+  const [category, setCategory] = useState('professional');
+  
+  // Save to localStorage whenever tasks change
+  React.useEffect(() => {
+    localStorage.setItem('workeaseTasks', JSON.stringify(tasks));
+  }, [tasks]);
+  
+  const addTask = (e) => {
+    e.preventDefault();
+    if (!newTask.trim()) return;
+    
+    const task = {
+      id: Date.now(),
+      name: newTask,
+      time: newTime || '',
+      category,
+      completed: false
+    };
+    
+    setTasks([...tasks, task]);
+    setNewTask('');
+    setNewTime('');
+  };
+  
+  const toggleComplete = (id) => {
+    setTasks(tasks.map(task => 
+      task.id === id ? { ...task, completed: !task.completed } : task
+    ));
+  };
+  
+  const deleteTask = (id) => {
+    setTasks(tasks.filter(task => task.id !== id));
+  };
+
+  // Filter tasks by category
+  const personalTasks = tasks.filter(task => task.category === 'personal');
+  const professionalTasks = tasks.filter(task => task.category === 'professional');
+  
+  // TaskList component to render tasks for a specific category
+  const TaskList = ({ categoryTasks }) => (
+    <div className="tasks-container">
+      {categoryTasks.length === 0 ? (
+        <div className="no-tasks">No tasks in this category</div>
+      ) : (
+        categoryTasks.map(task => (
+          <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
+            <div className="task-content">
+              <input 
+                type="checkbox"
+                checked={task.completed}
+                onChange={() => toggleComplete(task.id)}
+                className="task-checkbox"
+              />
+              <span className={task.completed ? 'task-name completed-text' : 'task-name'}>
+                {task.name}
+              </span>
+            </div>
+            <div className="task-actions">
+              <span className="task-time">{task.time}</span>
+              <button 
+                onClick={() => deleteTask(task.id)}
+                className="delete-btn"
+                aria-label="Delete task"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+  
+  return (
+    <div className="todo-list">
+      <form onSubmit={addTask} className="add-task-form">
+        <input 
+          type="text" 
+          value={newTask}
+          onChange={(e) => setNewTask(e.target.value)}
+          placeholder="Add a new task..."
+          className="task-input"
+        />
+        <input 
+          type="time" 
+          value={newTime}
+          onChange={(e) => setNewTime(e.target.value)}
+          className="time-input"
+        />
+        <select 
+          value={category} 
+          onChange={(e) => setCategory(e.target.value)}
+          className="category-select"
+        >
+          <option value="professional">Work</option>
+          <option value="personal">Personal</option>
+        </select>
+        <button type="submit" className="add-btn">Add</button>
+      </form>
+
+      <div className="task-categories">
+        <div className="category-column">
+          <h3 className="category-title">Work Tasks</h3>
+          <TaskList categoryTasks={professionalTasks} />
+        </div>
+        <div className="category-column">
+          <h3 className="category-title">Personal Tasks</h3>
+          <TaskList categoryTasks={personalTasks} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Task item component (for upcoming events)
 const TaskItem = ({ name, time }) => {
   return (
     <div className="task-item">
       <span>{name}</span>
       <span className="task-time">{time}</span>
-    </div>
-  );
-};
-
-// Progress bar component
-const ProgressBar = ({ label, percentage, color }) => {
-  return (
-    <div className="progress-container">
-      <p className="progress-label">{label}</p>
-      <div className="progress-bar-bg">
-        <div 
-          className="progress-bar-fill" 
-          style={{ width: `${percentage}%`, backgroundColor: color }}
-        />
-      </div>
-      <p className="progress-percentage">{percentage}%</p>
     </div>
   );
 };
@@ -117,22 +230,14 @@ const App = () => {
         </h1>
         
         <div className="dashboard-grid">
-          <DashboardCard title="Today's Tasks" icon="📋">
-            <TaskItem name="Complete project proposal" time="2:00 PM" />
-            <TaskItem name="Team meeting" time="3:30 PM" />
-            <TaskItem name="Review code changes" time="5:00 PM" />
+          <DashboardCard title="Task Management" icon="📋" className="tasks-card">
+            <TodoList />
           </DashboardCard>
           
           <DashboardCard title="Upcoming Events" icon="📅">
             <TaskItem name="Client presentation" time="Tomorrow" />
             <TaskItem name="Project deadline" time="Friday" />
             <TaskItem name="Team building event" time="Next week" />
-          </DashboardCard>
-          
-          <DashboardCard title="Statistics" icon="📊">
-            <ProgressBar label="Project Completion" percentage={70} color="#8b5cf6" />
-            <ProgressBar label="Weekly Tasks" percentage={45} color="#14b8a6" />
-            <ProgressBar label="Team Productivity" percentage={85} color="#fb7185" />
           </DashboardCard>
         </div>
       </div>
